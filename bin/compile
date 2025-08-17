@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# bin/compile <build-dir> <cache-dir> <env-dir>
+
+set -e
+
+BUILD_DIR=$1
+CACHE_DIR=$2
+ENV_DIR=$3
+BUILDPACK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
+# Load environment variables
+if [ -d "$ENV_DIR" ]; then
+    for e in $(ls $ENV_DIR); do
+        export "$e=$(cat $ENV_DIR/$e)"
+    done
+fi
+
+# Source helper functions
+. $BUILDPACK_DIR/lib/utils.sh
+. $BUILDPACK_DIR/lib/provision.sh
+
+# Setup log output
+puts_step "Starting Heroku Agent Buildpack"
+
+# Detect agent configuration
+if [ -f "$BUILD_DIR/agent.yaml" ]; then
+    CONFIG_FILE="$BUILD_DIR/agent.yaml"
+    puts_step "Found agent.yaml configuration"
+elif [ -f "$BUILD_DIR/agent.json" ]; then
+    CONFIG_FILE="$BUILD_DIR/agent.json"
+    puts_step "Found agent.json configuration"
+else
+    puts_error "No agent configuration found"
+    exit 1
+fi
+
+# Parse agent framework
+if [ -n "$AGENT_FRAMEWORK" ]; then
+    FRAMEWORK="$AGENT_FRAMEWORK"
+    puts_step "Using framework from environment: $FRAMEWORK"
+else
+    # Simple parsing for framework from YAML/JSON (will enhance later)
+    if [[ "$CONFIG_FILE" == *".yaml" ]]; then
+        FRAMEWORK=$(grep -m 1 "framework:" "$CONFIG_FILE" | awk '{print $2}' | tr -d '"'"'"')
+    else
+        FRAMEWORK=$(grep -m 1 "\"framework\":" "$CONFIG_FILE" | cut -d'"' -f4)
+    fi
+    puts_step "Detected framework from config: $FRAMEWORK"
+fi
+
+# Validate framework
+if [ "$FRAMEWORK" != "langchain" ] && [ "$FRAMEWORK" != "crewai" ]; then
+    puts_error "Unsupported framework: $FRAMEWORK. Currently only supporting: langchain, crewai"
+    exit 1
+fi
+
+# Install dependencies based on framework
+puts_step "Installing $FRAMEWORK dependencies"
+
+# Create requirements.txt if not exists
+if [ ! -f "$BUILD_DIR/requirements.txt" ]; then
+    touch "$BUILD_DIR/requirements.txt"
+    puts_step "Created requirements.txt"
+fi
+
+# Add framework dependencies
+case "$FRAMEWORK" in
+    "langchain")
+        puts_step "Adding LangChain dependencies"
+        echo "langchain>=0.0.267" >> "$BUILD_DIR/requirements.txt"
+        echo "openai>=0.28.1" >> "$BUILD_DIR/requirements.txt"
+        echo "anthropic>=0.5.0" >> "$BUILD_DIR/requirements.txt"
+        echo "fastapi>=0.95.1" >> "$BUILD_DIR/requirements.txt"
+        echo "uvicorn>=0.22.0" >> "$BUILD_DIR/requirements.txt"
+        ;;
+    "crewai")
+        puts_step "Adding CrewAI dependencies"
+        echo "crewai>=0.28.8" >> "$BUILD_DIR/requirements.txt"
+        echo "langchain>=0.1.0" >> "$BUILD_DIR/requirements.txt"
+        echo "langchain-openai>=0.0.2" >> "$BUILD_DIR/requirements.txt"
+        echo "openai>=0.28.1" >> "$BUILD_DIR/requirements.txt"
+        echo "langchain-community>=0.0.20" >> "$BUILD_DIR/requirements.txt"
+        echo "fastapi>=0.95.1" >> "$BUILD_DIR/requirements.txt"
+        echo "uvicorn>=0.22.0" >> "$BUILD_DIR/requirements.txt"
+        echo "pydantic>=2.4.0" >> "$BUILD_DIR/requirements.txt"
+        ;;
+    *)
+        puts_error "Unsupported framework: $FRAMEWORK"
+        exit 1
+        ;;
+esac
+
+# Provision resources based on configuration
+provision_resources "$CONFIG_FILE" "$BUILD_DIR"
+
+# Create a setup.py file if it doesn't exist to make the agent_helpers a package
+if [ -d "$BUILD_DIR/agent_helpers" ]; then
+    puts_step "Creating package for agent helpers"
+    touch "$BUILD_DIR/agent_helpers/__init__.py"
+    if [ ! -f "$BUILD_DIR/setup.py" ]; then
+        cat > "$BUILD_DIR/setup.py" << EOF
+from setuptools import setup, find_packages
+
+setup(
+    name="agent_helpers",
+    version="0.1.0",
+    packages=find_packages(),
+)
+EOF
+    fi
+fi
+
+puts_step "Heroku Agent Buildpack completed successfully"

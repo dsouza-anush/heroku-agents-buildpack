@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# bin/detect <build-dir>
+
+BUILD_DIR=$1
+
+# Check if agent.yaml or agent.json exists
+if [ -f "$BUILD_DIR/agent.yaml" ] || [ -f "$BUILD_DIR/agent.json" ]; then
+    echo "Heroku Agent"
+    exit 0
+else
+    exit 1
+fi

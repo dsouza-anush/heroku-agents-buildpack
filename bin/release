@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# bin/release <build-dir>
+
+BUILD_DIR=$1
+
+cat << EOF
+---
+default_process_types:
+  web: cd $BUILD_DIR && python -m uvicorn app:app --host 0.0.0.0 --port \$PORT
+EOF

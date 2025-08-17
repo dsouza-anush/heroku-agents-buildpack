@@ -1,0 +1,24 @@
+framework: crewai
+agent:
+  name: "heroku-crew"
+  description: "Multi-agent crew using CrewAI"
+  model: "claude-3-sonnet"
+  
+crew:
+  process: "sequential"
+  verbose: true
+  
+agents:
+  - role: "researcher"
+    goal: "Research and gather information"
+    backstory: "Expert researcher with attention to detail"
+    tools: ["search"]
+  - role: "writer" 
+    goal: "Write comprehensive reports"
+    backstory: "Skilled writer who creates clear, engaging content"
+
+resources:
+  memory:
+    enabled: true
+    type: "redis"
+    plan: "mini"

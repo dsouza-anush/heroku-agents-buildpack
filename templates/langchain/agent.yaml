@@ -1,0 +1,27 @@
+# Sample agent.yaml for LangChain
+framework: langchain
+
+agent:
+  name: "langchain-agent"
+  description: "Simple LangChain agent with web browsing and calculator tools"
+  model: "claude-3-sonnet"  # Will use Heroku Inference with Claude 3 Sonnet
+  
+mcp:
+  enabled: true
+  server_type: "fastmcp"
+  endpoints:
+    - path: "/agent"
+      auth: "none"
+  
+resources:
+  memory:
+    enabled: true
+    type: "redis"
+    plan: "mini"
+  
+tools:
+  builtin:
+    - name: "web-search"
+      enabled: true
+    - name: "calculator"
+      enabled: true
