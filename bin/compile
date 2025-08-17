@@ -98,7 +98,7 @@ if [ -d "$BUILD_DIR/agent_helpers" ]; then
     puts_step "Creating package for agent helpers"
     touch "$BUILD_DIR/agent_helpers/__init__.py"
     if [ ! -f "$BUILD_DIR/setup.py" ]; then
-        cat > "$BUILD_DIR/setup.py" << EOF
+        cat > "$BUILD_DIR/setup.py" << 'EOF'
 from setuptools import setup, find_packages
 
 setup(
