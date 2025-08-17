@@ -98,15 +98,9 @@ if [ -d "$BUILD_DIR/agent_helpers" ]; then
     puts_step "Creating package for agent helpers"
     touch "$BUILD_DIR/agent_helpers/__init__.py"
     if [ ! -f "$BUILD_DIR/setup.py" ]; then
-        cat > "$BUILD_DIR/setup.py" << 'EOF'
-from setuptools import setup, find_packages
-
-setup(
-    name="agent_helpers",
-    version="0.1.0",
-    packages=find_packages(),
-)
-EOF
+        # Simple string-based approach instead of heredoc
+        SETUP_PY="from setuptools import setup, find_packages\n\nsetup(\n    name=\"agent_helpers\",\n    version=\"0.1.0\",\n    packages=find_packages(),\n)"
+        echo -e "$SETUP_PY" > "$BUILD_DIR/setup.py"
     fi
 fi
 
