@@ -91,14 +91,27 @@ git push heroku main
 2. Updated CrewAI implementation to use OpenAI compatibility
 3. Enhanced documentation and examples
 
-## Known Issues
+## Known Issues and Challenges
 
-1. **Deployment Challenges**: The buildpack may encounter syntax errors during the compile phase. If this happens, try using the explicit git reference:
+1. **Deployment Challenges**: 
+   - The buildpack encountered syntax errors during the compile phase, specifically with here-document (EOF) handling in bash scripts.
+   - We resolved this by switching to a simple string-based approach for file generation.
+   - If deployment issues persist, try using the explicit git reference:
    ```bash
-   heroku buildpacks:set https://github.com/dsouza-anush/heroku-agents-buildpack.git#0a71015
+   heroku buildpacks:set https://github.com/dsouza-anush/heroku-agents-buildpack.git#1ad7880
    ```
+   - Heroku caching may cause stale buildpack versions to be used. If this happens, create a new app or use `heroku buildpacks:clear` before setting the buildpack again.
 
-2. **Model Compatibility**: The Heroku Inference API requires OpenAI-compatible client libraries even when accessing Claude models. The buildpack handles this but be aware when making custom modifications.
+2. **Heroku Inference API Access**:
+   - During testing, we experienced challenges accessing the Heroku Inference API from the buildpack.
+   - This appears to be related to environment variables not being properly set or accessed.
+   - When testing locally, ensure all required environment variables are set (`INFERENCE_KEY`, `INFERENCE_URL`, etc.).
+
+3. **Model Compatibility**: 
+   - The Heroku Inference API requires OpenAI-compatible client libraries even when accessing Claude models.
+   - Initially we tried using the Anthropic client library, but had to switch to the OpenAI client library.
+   - The buildpack now handles this correctly, but be aware when making custom modifications.
+   - Always use the OpenAI client pattern shown in the examples.
 
 ## Next Steps for Contributors
 
